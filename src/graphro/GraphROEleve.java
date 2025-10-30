@@ -8,14 +8,14 @@ import java.io.IOException;
  */
 public class GraphROEleve {
 
-    private GrapheListe graphe;
+    private final GrapheListe graphe;
 
     public GraphROEleve(String nomFichier) throws IOException {
         this.graphe = new GrapheListe(nomFichier);
     }
 
     public void afficherGraphe() {
-        System.out.println(this.graphe.toString());
+        System.out.println(this.graphe);
     }
 
     /**
