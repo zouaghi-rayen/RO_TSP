@@ -1,235 +1,179 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package graphro;
 
 import java.io.*;
 import java.util.*;
 
-/**
- * Graphes implantés dans des "listes"
- *
- * @author FMorain (morain@lix.polytechnique.fr)
- * @version 2007.01.30 [propagation modifs de Arc]
- */
-public class GrapheListe extends Graphe {
+public class GrapheListe {
 
-    private Vector<LinkedList<Arc>> L;
-    private Numerotation numerotation;
+    private final Map<Sommet, List<Sommet>> adjacence;
 
-    public int taille() {
-        return L.size();
+    public GrapheListe() {
+        adjacence = new HashMap<>();
     }
 
-    public GrapheListe(int n) {
-        numerotation = new Numerotation(n);
-        L = new Vector<LinkedList<Arc>>(n);
-        L.setSize(n);
+    public GrapheListe(String nomFichier) throws IOException {
+        adjacence = new HashMap<>();
+        lireGraphe(nomFichier);
     }
 
     public void ajouterSommet(Sommet s) {
-        if (numerotation.ajouterElement(s)) {
-            L.set(numerotation.numero(s), new LinkedList<Arc>());
+        if (!adjacence.containsKey(s)) {
+            adjacence.put(s, new ArrayList<>());
         }
     }
 
-    public boolean existeArc(Sommet s, Sommet t) {
-        for (Arc a : L.get(numerotation.numero(s))) {
-            if ((a.destination()).equals(t)) {
-                return true;
-            }
-        }
-        return false;
+    public void ajouterArc(Sommet source, Sommet destination) {
+        ajouterSommet(source);
+        ajouterSommet(destination);
+        adjacence.get(source).add(destination);
+        adjacence.get(destination).add(source);
     }
 
-    private boolean existeArc(int i, int j) {
-        Sommet t = numerotation.elementAt(j);
-        for (Arc a : L.get(i)) {
-            if (a.destination().equals(t)) {
-                return true;
-            }
-        }
-        return false;
+    public List<Sommet> getAdjacents(Sommet s) {
+        return adjacence.getOrDefault(s, new ArrayList<>());
     }
 
-    public void ajouterArc(Sommet s, Sommet t, int val) {
-        ajouterSommet(s);
-
-        ajouterSommet(t);
-        int si = numerotation.numero(s);
-        L.get(si).addLast(new Arc(s, t, val));
-    }
-
-    public void ajouterArc(int i, int j, int val) {
-        L.get(i).addLast(new Arc(numerotation.elementAt(i),
-                numerotation.elementAt(j),
-                val));
-    }
-
-    public int valeurArc(Sommet s, Sommet t) {
-        for (Arc a : L.get(numerotation.numero(s))) {
-            if (a.destination().equals(t)) {
-                return a.valeur();
-            }
-        }
-        return -1; // convention
-    }
-
-    public int valeurArc(int i, int j) {
-        Sommet t = numerotation.elementAt(j);
-        for (Arc a : L.get(i)) {
-            if (a.destination().equals(t)) {
-                return a.valeur();
-            }
-        }
-        return -1; // convention
-    }
-
-    public void enleverArc(Sommet s, Sommet t) {
-        int si = numerotation.numero(s);
-        Arc a = null;
-        for (Arc aa : L.get(numerotation.numero(s))) {
-            if (aa.destination().equals(t)) {
-                a = aa;
-                break;
-            }
-        }
-        if (a != null) {
-            L.get(numerotation.numero(s)).remove(a);
-        }
-    }
-
-    public void modifierValeur(Sommet s, Sommet t, int val) {
-        for (Arc a : L.get(numerotation.numero(s))) {
-            if (a.destination().equals(t)) {
-                a.modifierValeur(val);
-                return;
-            }
-        }
-    }
-
-    
-    public LinkedList<Arc> voisins(Sommet s) {
-        return L.get(numerotation.numero(s));
-    }
-
-    public int degre(Sommet s) {
-        return voisins(s).size();
-    }
-
-    
     public Collection<Sommet> sommets() {
-        return numerotation.elements();
+        return adjacence.keySet();
     }
 
-    public GrapheListe copie() {
-        int n = taille();
-        GrapheListe G = new GrapheListe(n);
-        for (int i = 0; i < n; i++) {
-            G.ajouterSommet(numerotation.elementAt(i));
-        }
-        for (int i = 0; i < n; i++) {
-// recopie dans le même ordre
-            LinkedList<Arc> Li = G.L.get(i);
-            for (Arc a : L.get(i)) {
-                Li.addLast(a);
-            }
-        }
-        return G;
-    }
-// retourne vrai si le caractère c est dans str
+    /**
+     * BFS pour trouver le plus court chemin
+     * Avec toutes les arêtes de coût 1, BFS trouve automatiquement
+     * le chemin avec le coût minimum (qui est égal au nombre d'arêtes)
+     */
+    public Chemin plusCourtChemin(Sommet source, Sommet destination) {
+        // Queue pour BFS
+        Queue<Sommet> queue = new LinkedList<>();
 
-    private static boolean option(String str, char c) {
-        for (int i = 0; i < str.length(); i++) {
-            if (str.charAt(i) == c) {
-                return true;
-            }
-        }
-        return false;
-    }
+        // Map pour suivre les prédécesseurs
+        Map<Sommet, Sommet> predecesseurs = new HashMap<>();
 
-    public static GrapheListe deFichier(String nomfic) {
-        try {
-            Scanner scan
-                    = new Scanner(
-                            new BufferedReader(new FileReader(nomfic)));
-            System.out.println(scan.next());
-            int n = scan.nextInt();
-            GrapheListe G = new GrapheListe(n);
-            String str = scan.next();
-            boolean estValue = option(str, 'v');
-            boolean estSym = option(str, 's');
-            boolean avecCouples = option(str, 'c');
+        // Set des sommets visités
+        Set<Sommet> visites = new HashSet<>();
 
-            System.out.println("nb noeuds = " + n);
-            for (int i = 0; i < n; i++) {
-                Sommet s = new Sommet(scan.next(), 0);
-                G.ajouterSommet(s);
-            }
-            if (avecCouples) {
-              //  System.out.println("Avec couples");
-// on lit des lignes "i j dij" ou "i j"
-                while (scan.hasNext()) {
-                    Sommet s = new Sommet(scan.next(), 0);
-                    Sommet t = new Sommet(scan.next(), 0);
-                    int si = G.numerotation.numero(s);
-                    int ti = G.numerotation.numero(t);
-                    if (estValue) {
-                        G.ajouterArc(si, ti, (int) scan.nextInt());
-                    } else {
-                        G.ajouterArc(si, ti, 1);
+        // Initialisation
+        queue.add(source);
+        visites.add(source);
+        predecesseurs.put(source, null);
+
+        // BFS
+        while (!queue.isEmpty()) {
+            Sommet courant = queue.poll();
+
+            // Si on a trouvé la destination
+            if (courant.equals(destination)) {
+                // Reconstruire le chemin
+                List<Sommet> chemin = new ArrayList<>();
+                Sommet actuel = destination;
+                int coutTotal = 0;
+
+                while (actuel != null) {
+                    chemin.add(actuel);
+                    if (predecesseurs.get(actuel) != null) {
+                        coutTotal++; // Chaque arête coûte 1
                     }
+                    actuel = predecesseurs.get(actuel);
                 }
+
+                Collections.reverse(chemin);
+                return new Chemin(coutTotal, chemin);
+            }
+
+            // Explorer tous les voisins
+            for (Sommet voisin : getAdjacents(courant)) {
+                if (!visites.contains(voisin)) {
+                    visites.add(voisin);
+                    predecesseurs.put(voisin, courant);
+                    queue.add(voisin);
+                }
+            }
+        }
+
+        // Aucun chemin trouvé
+        return new Chemin(Integer.MAX_VALUE, null);
+    }
+
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== GRAPHE ===\n");
+        sb.append("Nombre de sommets: ").append(adjacence.size()).append("\n\n");
+
+        // Calculer le nombre total d'arêtes (divisé par 2 car non-orienté)
+        int totalAretes = 0;
+        for (List<Sommet> voisins : adjacence.values()) {
+            totalAretes += voisins.size();
+        }
+        sb.append("Nombre d'arêtes: ").append(totalAretes / 2).append("\n\n");
+
+        sb.append("Liste d'adjacence:\n");
+        sb.append("-".repeat(50)).append("\n");
+
+        // Trier les sommets par nom pour un affichage ordonné
+        List<Sommet> sommetsOrdonnes = new ArrayList<>(adjacence.keySet());
+        sommetsOrdonnes.sort(Comparator.comparing(Sommet::getNom));
+
+        for (Sommet sommet : sommetsOrdonnes) {
+            sb.append(sommet.getNom());
+            if (sommet.estIntersection()) {
+                sb.append(" [INTERSECTION]");
+            }
+            sb.append(" -> ");
+
+            List<Sommet> voisins = adjacence.get(sommet);
+            if (voisins.isEmpty()) {
+                sb.append("(aucun voisin)");
             } else {
-// format "s ns t0 t1 ... t{ns-1}"
-// ou "s ns t0 v0 t1 v1 ... t{ns-1} v{ns-1}"
-               // System.out.println("Avec listes, estvalue=" + estValue);
-                for (int r = 0; r < n; r++) {
-                    Sommet s = new Sommet(scan.next(), 0);
-                    int si = G.numerotation.numero(s);
-                    int nj = (int) scan.nextInt();
-                    for (int k = 0; k < nj; k++) {
-                        Sommet t = new Sommet(scan.next(), 0);
-                        int ti = G.numerotation.numero(t);
-                        if (estValue) {
-                            G.ajouterArc(si, ti,
-                                    (int) scan.nextInt());
-                        } else {
-                            G.ajouterArc(si, ti, 1);
-                        }
+                for (int i = 0; i < voisins.size(); i++) {
+                    sb.append(voisins.get(i).getNom());
+                    if (i < voisins.size() - 1) {
+                        sb.append(", ");
                     }
                 }
+            }
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    public void lireGraphe(String nomFichier) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(nomFichier));
+        String ligne;
+        Map<String, Sommet> mapSommets = new HashMap<>();
+
+        while ((ligne = br.readLine()) != null) {
+            ligne = ligne.trim();
+            if (ligne.isEmpty() || ligne.startsWith("#")) {
+                continue;
             }
 
-            //System.out.println("G=" + G);
-            if (estSym) // on doit symétriser G
-            {
-                for (Sommet s : G.sommets()) {
-                    for (Sommet t : G.sommets()) {
-                        if (G.existeArc(s, t)
-                                && !G.existeArc(s, t)) {
-                            G.ajouterArc(s, t,
-                                    G.valeurArc(s, t));
-                        }
-                    }
+            String[] tokens = ligne.split("\\s+");
+            if (tokens[0].equals("V")) {
+                String nomSommet = tokens[1];
+                boolean estIntersection = Boolean.parseBoolean(tokens[2]);
+                Sommet sommet = new Sommet(nomSommet, estIntersection);
+                this.ajouterSommet(sommet);
+                mapSommets.put(nomSommet, sommet);
+            } else if (tokens[0].equals("E")) {
+                String sourceNom = tokens[1];
+                String destinationNom = tokens[2];
+
+                Sommet source = mapSommets.get(sourceNom);
+                Sommet destination = mapSommets.get(destinationNom);
+
+                if (source == null || destination == null) {
+                    throw new IllegalArgumentException("Sommet non défini pour l'arête : " + ligne);
                 }
+
+                this.ajouterArc(source, destination);
+            } else {
+                throw new IllegalArgumentException("Ligne invalide dans le fichier : " + ligne);
             }
-            return G;
-        } catch (Exception e) {
         }
-        return null;
-    }
-    
-    public int flotMaxFordF(Graphe g){
-        
-      throw new UnsupportedOperationException("Not supported yet.");  
-        
-    }
-    
-    
-public String toString() {
-        return L.toString();
+
+        br.close();
     }
 }
