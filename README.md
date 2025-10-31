@@ -1,0 +1,3 @@
+# TSP Delivery Route Optimizer
+
+This project solves the Travelling Salesman Problem (TSP) using a **2-opt optimization algorithm**. It computes the shortest delivery route between all addresses by finding distances via **bi-directional BFS**, allowing movement through both streets and metro stations. The project is implemented in Java, with graph data stored in the Data/ directory and source code in src/. Use the provided Makefile with the commands make all, make compil, make run, and make clean to build, run, and clean the project
