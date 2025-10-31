@@ -5,7 +5,7 @@ import java.util.*;
 
 public class GrapheListe {
 
-    private final Map<Sommet, List<Sommet>> adjacence;
+    private final Map<Sommet, List<Arc>> adjacence;
 
     public GrapheListe() {
         adjacence = new HashMap<>();
@@ -22,14 +22,14 @@ public class GrapheListe {
         }
     }
 
-    public void ajouterArc(Sommet source, Sommet destination) {
+    public void ajouterArc(Sommet source, Sommet destination, int cout) {
         ajouterSommet(source);
         ajouterSommet(destination);
-        adjacence.get(source).add(destination);
-        adjacence.get(destination).add(source);
+        adjacence.get(source).add(new Arc(destination, cout));
+        adjacence.get(destination).add(new Arc(source, cout));
     }
 
-    public List<Sommet> getAdjacents(Sommet s) {
+    public List<Arc> getAdjacents(Sommet s) {
         return adjacence.getOrDefault(s, new ArrayList<>());
     }
 
@@ -37,106 +37,131 @@ public class GrapheListe {
         return adjacence.keySet();
     }
 
-    /**
-     * BFS pour trouver le plus court chemin
-     * Avec toutes les arêtes de coût 1, BFS trouve automatiquement
-     * le chemin avec le coût minimum (qui est égal au nombre d'arêtes)
-     */
-    public Chemin plusCourtChemin(Sommet source, Sommet destination) {
-        // Queue pour BFS
-        Queue<Sommet> queue = new LinkedList<>();
-
-        // Map pour suivre les prédécesseurs
-        Map<Sommet, Sommet> predecesseurs = new HashMap<>();
-
-        // Set des sommets visités
-        Set<Sommet> visites = new HashSet<>();
-
-        // Initialisation
-        queue.add(source);
-        visites.add(source);
-        predecesseurs.put(source, null);
-
-        // BFS
-        while (!queue.isEmpty()) {
-            Sommet courant = queue.poll();
-
-            // Si on a trouvé la destination
-            if (courant.equals(destination)) {
-                // Reconstruire le chemin
-                List<Sommet> chemin = new ArrayList<>();
-                Sommet actuel = destination;
-                int coutTotal = 0;
-
-                while (actuel != null) {
-                    chemin.add(actuel);
-                    if (predecesseurs.get(actuel) != null) {
-                        coutTotal++; // Chaque arête coûte 1
-                    }
-                    actuel = predecesseurs.get(actuel);
-                }
-
-                Collections.reverse(chemin);
-                return new Chemin(coutTotal, chemin);
-            }
-
-            // Explorer tous les voisins
-            for (Sommet voisin : getAdjacents(courant)) {
-                if (!visites.contains(voisin)) {
-                    visites.add(voisin);
-                    predecesseurs.put(voisin, courant);
-                    queue.add(voisin);
-                }
+    public int getCoutArc(Sommet source, Sommet destination) {
+        for (Arc arc : adjacence.getOrDefault(source, new ArrayList<>())) {
+            if (arc.getDestination().equals(destination)) {
+                return arc.getCout();
             }
         }
-
-        // Aucun chemin trouvé
-        return new Chemin(Integer.MAX_VALUE, null);
+        return Integer.MAX_VALUE;
     }
 
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== GRAPHE ===\n");
-        sb.append("Nombre de sommets: ").append(adjacence.size()).append("\n\n");
-
-        // Calculer le nombre total d'arêtes (divisé par 2 car non-orienté)
-        int totalAretes = 0;
-        for (List<Sommet> voisins : adjacence.values()) {
-            totalAretes += voisins.size();
+    public Chemin plusCourtChemin(Sommet source, Sommet destination) {
+        if (source.equals(destination)) {
+            return new Chemin(0, Collections.singletonList(source));
         }
-        sb.append("Nombre d'arêtes: ").append(totalAretes / 2).append("\n\n");
 
-        sb.append("Liste d'adjacence:\n");
-        sb.append("-".repeat(50)).append("\n");
+        // Deux files pour la recherche bidirectionnelle
+        Queue<Sommet> queueAvant = new LinkedList<>();
+        Queue<Sommet> queueArriere = new LinkedList<>();
 
-        // Trier les sommets par nom pour un affichage ordonné
-        List<Sommet> sommetsOrdonnes = new ArrayList<>(adjacence.keySet());
-        sommetsOrdonnes.sort(Comparator.comparing(Sommet::getNom));
+        // Maps pour stocker les distances et prédécesseurs depuis le début
+        Map<Sommet, Integer> distAvant = new HashMap<>();
+        Map<Sommet, Sommet> predAvant = new HashMap<>();
 
-        for (Sommet sommet : sommetsOrdonnes) {
-            sb.append(sommet.getNom());
-            if (sommet.estIntersection()) {
-                sb.append(" [INTERSECTION]");
-            }
-            sb.append(" -> ");
+        // Maps pour stocker les distances et successeurs depuis la fin
+        Map<Sommet, Integer> distArriere = new HashMap<>();
+        Map<Sommet, Sommet> succArriere = new HashMap<>();
 
-            List<Sommet> voisins = adjacence.get(sommet);
-            if (voisins.isEmpty()) {
-                sb.append("(aucun voisin)");
-            } else {
-                for (int i = 0; i < voisins.size(); i++) {
-                    sb.append(voisins.get(i).getNom());
-                    if (i < voisins.size() - 1) {
-                        sb.append(", ");
+        // Initialisation
+        queueAvant.add(source);
+        distAvant.put(source, 0);
+
+        queueArriere.add(destination);
+        distArriere.put(destination, 0);
+
+        Sommet pointRencontre = null;
+        int meilleureDist = Integer.MAX_VALUE;
+
+        // Recherche bidirectionnelle
+        while (!queueAvant.isEmpty() || !queueArriere.isEmpty()) {
+            // Expansion depuis le début
+            if (!queueAvant.isEmpty()) {
+                Sommet courant = queueAvant.poll();
+                int distCourante = distAvant.get(courant);
+
+                // Si on a déjà une meilleure solution, arrêter cette direction
+                if (distCourante >= meilleureDist) {
+                    queueAvant.clear();
+                } else {
+                    for (Arc arc : getAdjacents(courant)) {
+                        Sommet voisin = arc.getDestination();
+
+                        if (!distAvant.containsKey(voisin)) {
+                            distAvant.put(voisin, distCourante + 1);
+                            predAvant.put(voisin, courant);
+                            queueAvant.add(voisin);
+
+                            // Vérifier si on rencontre la recherche arrière
+                            if (distArriere.containsKey(voisin)) {
+                                int distTotale = distAvant.get(voisin) + distArriere.get(voisin);
+                                if (distTotale < meilleureDist) {
+                                    meilleureDist = distTotale;
+                                    pointRencontre = voisin;
+                                }
+                            }
+                        }
                     }
                 }
             }
-            sb.append("\n");
+
+            // Expansion depuis la fin
+            if (!queueArriere.isEmpty()) {
+                Sommet courant = queueArriere.poll();
+                int distCourante = distArriere.get(courant);
+
+                // Si on a déjà une meilleure solution, arrêter cette direction
+                if (distCourante >= meilleureDist) {
+                    queueArriere.clear();
+                } else {
+                    for (Arc arc : getAdjacents(courant)) {
+                        Sommet voisin = arc.getDestination();
+
+                        if (!distArriere.containsKey(voisin)) {
+                            distArriere.put(voisin, distCourante + 1);
+                            succArriere.put(voisin, courant);
+                            queueArriere.add(voisin);
+
+                            // Vérifier si on rencontre la recherche avant
+                            if (distAvant.containsKey(voisin)) {
+                                int distTotale = distAvant.get(voisin) + distArriere.get(voisin);
+                                if (distTotale < meilleureDist) {
+                                    meilleureDist = distTotale;
+                                    pointRencontre = voisin;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        return sb.toString();
+        // Pas de chemin trouvé
+        if (pointRencontre == null) {
+            return new Chemin(Integer.MAX_VALUE, null);
+        }
+
+        // Reconstruire le chemin complet
+        List<Sommet> chemin = new ArrayList<>();
+
+        // Partie avant (source -> point de rencontre)
+        Sommet actuel = pointRencontre;
+        List<Sommet> partieAvant = new ArrayList<>();
+        while (actuel != null) {
+            partieAvant.add(actuel);
+            actuel = predAvant.get(actuel);
+        }
+        Collections.reverse(partieAvant);
+        chemin.addAll(partieAvant);
+
+        // Partie arrière (point de rencontre -> destination)
+        actuel = succArriere.get(pointRencontre);
+        while (actuel != null) {
+            chemin.add(actuel);
+            actuel = succArriere.get(actuel);
+        }
+
+        return new Chemin(meilleureDist, chemin);
     }
 
     public void lireGraphe(String nomFichier) throws IOException {
@@ -147,19 +172,22 @@ public class GrapheListe {
         while ((ligne = br.readLine()) != null) {
             ligne = ligne.trim();
             if (ligne.isEmpty() || ligne.startsWith("#")) {
-                continue;
+                continue; // Ignorer les lignes vides ou les commentaires
             }
 
             String[] tokens = ligne.split("\\s+");
             if (tokens[0].equals("V")) {
+                // Définition d'un sommet
                 String nomSommet = tokens[1];
                 boolean estIntersection = Boolean.parseBoolean(tokens[2]);
                 Sommet sommet = new Sommet(nomSommet, estIntersection);
                 this.ajouterSommet(sommet);
                 mapSommets.put(nomSommet, sommet);
             } else if (tokens[0].equals("E")) {
+                // Définition d'une arête
                 String sourceNom = tokens[1];
                 String destinationNom = tokens[2];
+                int cout = Integer.parseInt(tokens[3]);
 
                 Sommet source = mapSommets.get(sourceNom);
                 Sommet destination = mapSommets.get(destinationNom);
@@ -168,7 +196,7 @@ public class GrapheListe {
                     throw new IllegalArgumentException("Sommet non défini pour l'arête : " + ligne);
                 }
 
-                this.ajouterArc(source, destination);
+                this.ajouterArc(source, destination, cout);
             } else {
                 throw new IllegalArgumentException("Ligne invalide dans le fichier : " + ligne);
             }
