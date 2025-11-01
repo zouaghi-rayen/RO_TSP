@@ -13,7 +13,11 @@ public class VoyageurDeCommerce {
         this.cachePlusCourtsChemins = new HashMap<>();
     }
 
-    private void creerGrapheCompletDesAdresses(List<Sommet> adresses) {
+    public GrapheListe getGrapheCompletAdresses() {
+    	return this.grapheCompletAdresses;
+    }
+    
+    public void creerGrapheCompletDesAdresses(List<Sommet> adresses) {
         grapheCompletAdresses = new GrapheListe();
         cachePlusCourtsChemins = new HashMap<>();
         for (Sommet adresse1 : adresses) {
@@ -34,13 +38,13 @@ public class VoyageurDeCommerce {
     }
 
     public List<Sommet> algoOptim2opt(Sommet depart) {
-        List<Sommet> adresses = getptsLivraison(depart);
+        List<Sommet> adresses = getPtsLivraison(depart);
 
         // Créer le graphe complet des adresses
         creerGrapheCompletDesAdresses(adresses);
 
         // Initialiser le tour sur le graphe complet des adresses
-        List<Sommet> tour = initaliserTour(adresses, depart);
+        List<Sommet> tour = initialiserTour(adresses, depart);
 
         // Appliquer l'algorithme 2-opt sur le graphe complet des adresses
         boolean amelioration;
@@ -65,7 +69,7 @@ public class VoyageurDeCommerce {
         return this.reconstituerCheminComplet(tour);
     }
 
-    private List<Sommet> echangeDeuxOpt(List<Sommet> tour, int i, int j) {
+    public List<Sommet> echangeDeuxOpt(List<Sommet> tour, int i, int j) {
         List<Sommet> nouveauTour = new ArrayList<>(tour.subList(0, i));
         List<Sommet> sousListe = new ArrayList<>(tour.subList(i, j + 1));
         Collections.reverse(sousListe);
@@ -74,7 +78,7 @@ public class VoyageurDeCommerce {
         return nouveauTour;
     }
 
-    private int calculCoutTour(List<Sommet> tour) {
+    public int calculCoutTour(List<Sommet> tour) {
         int coutTotal = 0;
         for (int i = 0; i < tour.size() - 1; i++) {
             Sommet s1 = tour.get(i);
@@ -88,7 +92,7 @@ public class VoyageurDeCommerce {
         return coutTotal;
     }
 
-    private List<Sommet> reconstituerCheminComplet(List<Sommet> tour) {
+    public List<Sommet> reconstituerCheminComplet(List<Sommet> tour) {
         List<Sommet> cheminComplet = new ArrayList<>();
 
         for (int i = 0; i < tour.size() - 1; i++) {
@@ -111,7 +115,7 @@ public class VoyageurDeCommerce {
         return cheminComplet;
     }
 
-    private Chemin obtenirCheminResultat(Sommet s1, Sommet s2) {
+    public Chemin obtenirCheminResultat(Sommet s1, Sommet s2) {
         String cle1 = s1.nom + "-" + s2.nom;
 
         if (cachePlusCourtsChemins.containsKey(cle1)) {
@@ -124,7 +128,7 @@ public class VoyageurDeCommerce {
     }
 
 
-    private List<Sommet> getptsLivraison(Sommet depart) {
+    public List<Sommet> getPtsLivraison(Sommet depart) {
         List<Sommet> ptsLivraison = new ArrayList<>();
         for (Sommet s : graphe.sommets()) {
             if (!s.estIntersection()) {
@@ -140,9 +144,10 @@ public class VoyageurDeCommerce {
         return ptsLivraison;
     }
 
-    private List<Sommet> initaliserTour(List<Sommet> ptsLivraison, Sommet depart) {
+    public List<Sommet> initialiserTour(List<Sommet> ptsLivraison, Sommet depart) {
         List<Sommet> tour = new ArrayList<>(ptsLivraison);
         tour.add(depart);
         return tour;
     }
+    
 }
