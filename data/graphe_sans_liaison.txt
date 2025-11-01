@@ -1,0 +1,99 @@
+#Définition des sommets (V <nom_sommet> <estIntersection>)
+
+# Stations
+V Intersection_Station_verte true
+V Intersection_Station_rouge true
+V Intersection_Station_jaune true
+
+# Sommets de Rue (non-intersections)
+V 22_rue_verte false
+V 8_rue_mauve false
+V 10_rue_rouge false
+V 3_rue_marron false
+V Depot false
+
+# Bleu clair
+V Intersection_Bleu_clair_rouge true
+V Intersection_Bleu_clair_gris_fonce true
+
+# Gris foncé
+V Intersection_Gris_fonce_vert true
+V Intersection_Gris_fonce_mauve true
+V Intersection_Gris_fonce_orange true
+V Intersection_Gris_fonce_rose true
+
+# Jaune
+V Intersection_Jaune_mauve true
+
+# Rouge
+V Intersection_Rouge_vert true
+
+# Marron
+V Intersection_Marron_vert true
+
+# Orange
+V Intersection_Orange_rouge true
+
+# Gris clair
+V Intersection_Gris_clair_rose true
+V Intersection_Gris_clair_vert true
+
+# Bleu foncé
+V Intersection_Bleu_fonce_marron true
+
+# Mauve
+V Intersection_Mauve_vert true
+
+
+# Définition des arêtes (E <source> <destination> <coût>)
+
+# Rose
+E Intersection_Gris_clair_rose Intersection_Gris_fonce_rose 1
+
+# Vert
+E Intersection_Gris_clair_vert 22_rue_verte 1
+E 22_rue_verte Intersection_Mauve_vert 1
+E Intersection_Mauve_vert Intersection_Rouge_vert 1
+E Intersection_Station_verte Intersection_Gris_fonce_vert 1
+E Intersection_Marron_vert Intersection_Station_verte 1
+E Intersection_Gris_fonce_vert Intersection_Gris_clair_vert 1
+
+# Bleu clair
+E Intersection_Bleu_clair_gris_fonce Intersection_Bleu_clair_rouge 1
+
+# Gris foncé
+E Intersection_Gris_fonce_orange Intersection_Bleu_clair_gris_fonce 1
+E Intersection_Gris_fonce_vert Intersection_Gris_fonce_rose 1
+E Intersection_Bleu_clair_gris_fonce Intersection_Gris_fonce_mauve 1
+E Intersection_Gris_fonce_rose Intersection_Gris_fonce_orange 1
+
+# Mauve
+E Intersection_Gris_fonce_mauve Intersection_Jaune_mauve 1
+E Intersection_Jaune_mauve 8_rue_mauve 1
+E 8_rue_mauve Intersection_Mauve_vert 1
+
+# Metro
+# E Intersection_Station_verte Intersection_Station_rouge 1  <--- LIAISON SUPPRIMÉE
+E Intersection_Station_rouge Intersection_Station_jaune 1
+
+# Orange
+E Intersection_Gris_fonce_orange Intersection_Orange_rouge 1
+
+# Rouge
+E Intersection_Station_rouge 10_rue_rouge 1
+E Intersection_Bleu_clair_rouge Intersection_Station_rouge 1
+E 10_rue_rouge Intersection_Rouge_vert 1
+E Intersection_Orange_rouge Intersection_Bleu_clair_rouge 1
+
+# Marron
+E 3_rue_marron Intersection_Bleu_fonce_marron 1
+E Intersection_Bleu_fonce_marron Intersection_Marron_vert 1
+
+# Bleu foncé
+E Depot Intersection_Bleu_fonce_marron 1
+
+# Gris clair
+E Intersection_Gris_clair_vert Intersection_Gris_clair_rose 1
+
+# Jaune
+E Intersection_Jaune_mauve Intersection_Station_jaune 1
