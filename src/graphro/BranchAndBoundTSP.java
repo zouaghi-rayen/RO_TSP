@@ -5,7 +5,6 @@ import java.util.*;
 /**
  * Branch & Bound (Best-First) pour TSP sur les adresses (points de livraison).
  * Repose sur le "graphe complet des adresses" fourni par VoyageurDeCommerce.
- *
  */
 public class BranchAndBoundTSP {
 
@@ -28,9 +27,7 @@ public class BranchAndBoundTSP {
     public BranchAndBoundTSP(VoyageurDeCommerce vdc, Sommet depart) {
         this.vdcUtils = vdc;
         this.depart = depart;
-        // récupérer et préparer la liste des adresses et le graphe complet
         List<Sommet> tmp = new ArrayList<>(vdcUtils.getPtsLivraison(depart));
-        // s'assurer que depart est en position 0
         if (!tmp.isEmpty() && !tmp.get(0).equals(depart)) {
             tmp.remove(depart);
             tmp.add(0, depart);
@@ -67,8 +64,8 @@ public class BranchAndBoundTSP {
             Sommet dernier = chemin.get(chemin.size() - 1);
 
             if (chemin.size() == adresses.size()) {
-                int coutRetour = gComplet.getCoutArc(dernier, depart);
-                if (coutRetour == Integer.MAX_VALUE) continue;
+                int coutRetour = gComplet.valeurArc(dernier, depart);
+                if (coutRetour == -1 || coutRetour == Integer.MAX_VALUE) continue;
                 int coutTotal = etat.coutActuel + coutRetour;
                 if (coutTotal < borneSuperieure) {
                     borneSuperieure = coutTotal;
@@ -80,8 +77,8 @@ public class BranchAndBoundTSP {
 
             for (Sommet next : candidats) {
                 if (chemin.contains(next)) continue;
-                int coutArc = gComplet.getCoutArc(dernier, next);
-                if (coutArc == Integer.MAX_VALUE) continue; // pas d'arc dans graphe complet -> impossible
+                int coutArc = gComplet.valeurArc(dernier, next);
+                if (coutArc == -1 || coutArc == Integer.MAX_VALUE) continue; 
 
                 List<Sommet> nouveauChemin = new ArrayList<>(chemin);
                 nouveauChemin.add(next);
@@ -112,12 +109,12 @@ public class BranchAndBoundTSP {
             List<Integer> couts = new ArrayList<>();
             for (Sommet dest : toutesAdresses) {
                 if (s.equals(dest)) continue;
-                int c = gComplet.getCoutArc(s, dest);
-                if (c != Integer.MAX_VALUE) couts.add(c);
+                int c = gComplet.valeurArc(s, dest);
+                if (c != -1 && c != Integer.MAX_VALUE) couts.add(c);
             }
             if (!toutesAdresses.contains(depart)) { 
-                int cDepot = gComplet.getCoutArc(s, depart);
-                if (cDepot != Integer.MAX_VALUE) couts.add(cDepot);
+                int cDepot = gComplet.valeurArc(s, depart);
+                if (cDepot != -1 && cDepot != Integer.MAX_VALUE) couts.add(cDepot);
             }
 
             Collections.sort(couts);
