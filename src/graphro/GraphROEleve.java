@@ -65,7 +65,7 @@ public class GraphROEleve {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (IllegalStateException e) {
-            System.err.println("⚠️ Erreur : " + e.getMessage());
+            System.err.println("Erreur : " + e.getMessage());
         }
     }
 
