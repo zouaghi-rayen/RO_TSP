@@ -73,7 +73,7 @@ public class GraphROEleve {
     {
         testerGraphe("data/graphe.txt");
 
-        testerGraphe("data/graphe_sans_liaison.txt");
+        testerGraphe("data/graphe_sans_metro.txt");
     }
 }
 
